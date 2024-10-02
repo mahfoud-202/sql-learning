@@ -1,0 +1,46 @@
+name: sql_learning_project
+
+services:
+
+  db:
+    image: postgres:alpine
+    container_name: my_postgres
+    environment: &postgres_env
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: my_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    ports:
+      - "8889:80"
+    depends_on:
+      - db
+
+  jupyter:
+    container_name: my_jupyter
+    build:
+      context: .
+      dockerfile: ./compose/docker_images/jupyter/Dockerfile
+    ports:
+      - 8888:8888
+    volumes:
+      - ./compose/bind_mounts/workspace:/home/jovyan/work
+    command: start-notebook.py --NotebookApp.token="${JUPYTER_TOKEN}"
+    environment:
+      <<: *postgres_env
+      JUPYTER_ENABLE_LAB: "yes"
+      JUPYTER_TOKEN: "${JUPYTER_TOKEN}"
+    depends_on:
+      - db
+
+volumes:
+  postgres-data:
